@@ -1,56 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONSIA EDU MAX</title>
+
+<style>
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:radial-gradient(circle at top,#0b1230,#030611);
+color:white;
+text-align:center;
+}
+
+h1{
+margin-top:30px;
+font-size:36px;
+}
+
+.avatar-container{
+margin-top:20px;
+}
+
+.avatar{
+width:220px;
+height:220px;
+border-radius:50%;
+object-fit:cover;
+box-shadow:0 0 40px #4d7cff;
+transition:0.4s;
+}
+
+.avatar.talking{
+transform:scale(1.05);
+box-shadow:0 0 60px #8aa7ff;
+}
+
+.avatar-selector{
+margin-top:20px;
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.avatar-option{
+width:70px;
+height:70px;
+border-radius:50%;
+cursor:pointer;
+border:3px solid transparent;
+}
+
+.avatar-option.active{
+border:3px solid #5b7cff;
+}
+
+.controls{
+margin-top:20px;
+}
+
+button{
+padding:12px 20px;
+margin:8px;
+border-radius:10px;
+border:none;
+cursor:pointer;
+background:linear-gradient(135deg,#355cff,#6a8dff);
+color:white;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+input{
+margin-top:20px;
+padding:12px;
+width:280px;
+border-radius:10px;
+border:none;
+}
+
+.response{
+margin-top:20px;
+min-height:40px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>CONSIA EDU MAX</h1>
+
+<div class="avatar-container">
+<img id="avatar" class="avatar" src="https://i.imgur.com/7k12EPD.png">
+</div>
+
+<div class="avatar-selector">
+<img class="avatar-option active" src="https://i.imgur.com/7k12EPD.png" onclick="changeAvatar(this)">
+<img class="avatar-option" src="https://i.imgur.com/eM1bW2S.png" onclick="changeAvatar(this)">
+<img class="avatar-option" src="https://i.imgur.com/tX6K0xF.png" onclick="changeAvatar(this)">
+<img class="avatar-option" src="https://i.imgur.com/6VBx3io.png" onclick="changeAvatar(this)">
+</div>
+
+<div class="controls">
+<button onclick="startListening()">🎤 Hablar</button>
+<button onclick="processText()">⌨️ Enviar</button>
+<button onclick="speakResponse()">🔊 Escuchar</button>
+</div>
+
+<div>
+<input type="text" id="textInput" placeholder="Escribe aquí..." onkeydown="if(event.key==='Enter'){processText();}">
+</div>
+
+<div class="response" id="responseText"></div>
+
 <script>
 
 const API_URL = "https://api.consia.world/ask";
-
+let currentLang = "es-ES";
 let lastResponse = "";
 
-async function sendToConsia(message){
-  const res = await fetch(API_URL, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify({
-      message: message,
-      mode: "kids",
-      language: "auto"
-    })
-  });
+function changeAvatar(element){
+document.querySelectorAll('.avatar-option').forEach(a=>a.classList.remove('active'));
+element.classList.add('active');
+document.getElementById("avatar").src = element.src;
+}
 
-  const data = await res.json();
-  return data.reply || "Estoy aprendiendo contigo 💫";
+async function sendToConsia(message){
+try{
+const res = await fetch(API_URL,{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify({
+message: message,
+mode: "kids",
+language: currentLang
+})
+});
+const data = await res.json();
+return data.reply || "Aprendamos juntos 🌟";
+}catch(e){
+return "Conexión IA pendiente.";
+}
 }
 
 function startListening(){
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "auto";
-  recognition.start();
-
-  recognition.onresult = async function(event){
-    const speech = event.results[0][0].transcript;
-    processInput(speech);
-  };
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = currentLang;
+recognition.start();
+recognition.onresult = async function(event){
+const speech = event.results[0][0].transcript;
+processInput(speech);
+};
 }
 
 function processText(){
-  const text = document.getElementById("textInput").value;
-  processInput(text);
+const text = document.getElementById("textInput").value;
+processInput(text);
 }
 
 async function processInput(input){
-  document.getElementById("responseText").innerText = "Pensando...";
-  
-  const aiReply = await sendToConsia(input);
-  lastResponse = aiReply;
-
-  document.getElementById("responseText").innerText = aiReply;
-  speakResponse();
+document.getElementById("responseText").innerText = "Pensando...";
+const aiReply = await sendToConsia(input);
+lastResponse = aiReply;
+document.getElementById("responseText").innerText = aiReply;
+speakResponse();
 }
 
 function speakResponse(){
-  const utterance = new SpeechSynthesisUtterance(lastResponse);
-  utterance.lang = "auto";
-  speechSynthesis.speak(utterance);
+const avatar = document.getElementById("avatar");
+avatar.classList.add("talking");
+
+const utterance = new SpeechSynthesisUtterance(lastResponse);
+utterance.lang = currentLang;
+speechSynthesis.speak(utterance);
+
+utterance.onend = ()=>{
+avatar.classList.remove("talking");
+}
 }
 
 </script>
+
+</body>
+</html>
